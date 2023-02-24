@@ -1,0 +1,67 @@
+#+auto_tangle: t
+#+OPTIONS: ^:nil
+#+TITLE: Weekend trip from zero to Ruby on Rails
+
+
+
+
+* Ruby
+Ruby on Rails can be learned on its own, but knowledge of Ruby should come in useful.
+
+** Language motivation
+From [[http://ruby-doc.com/docs/ProgrammingRuby/html/index.html]]
+
+Take a true object-oriented language, such as Smalltalk. Drop the unfamiliar syntax and move to more conventional, file-based source code. Now add in a good measure of the flexibility and convenience of languages such as Python and Perl. You end up with Ruby.
+
+Ruby follows the Principle of Least Surprise---things work the way you would expect them to, with very few special cases or exceptions.
+
+** Hello world
+
+#+begin_src ruby :tangle "helloworld.rb"
+  3.times { puts "Hello, world!" }
+#+end_src
+
+** Books to read
+- The Well-Grounded Rubyist (2019)
+- Practical Object-Oriented Design: An Agile Primer Using Ruby (2019)
+- Only for reference: Programming Ruby 1.9 & 2.0: Pragmatic Guide (2013)
+
+** The Well-Grounded Rubyist
+
+*** Ch1
+#+begin_src ruby :tangle "twgr_ch1.rb"
+  x = "Hello"
+  print x
+  y = x
+  puts y
+  x = "ello"
+  p y  # Hello
+#+end_src
+value semantics, =p= to inspect, commenting
+
+
+- Scoping seems to be local-instance-class-global
+- Default variable naming conventions
+  - local: first_name
+  - instance: @first_name
+  - class: @@first_name
+  - global: $FIRST_NAME
+  - constants start with uppercase: FirstName or FIRST_NAME
+  - 40 reserved words
+  - method names follow same rules and conventions as local variables
+
+#+begin_src ruby
+  "100".to_i(2)
+#+end_src
+message =to_i(2)= is sent to ="100"=: (vs. "calling a method": objects can be sent messages that they lack any answers to, see `method_missing`)
+
+#+begin_src ruby
+  puts "hello"
+#+end_src
+is a /bareword/-style invocation. The message is =puts= with ="Hello"= argument to default object =self=. =self= refers to different objects according to certain rules
+
+- concept of object > concept of class: after instantiation on class, objects can mutate into having completely different behaviours
+  - one of the most central defining principles of the design of Ruby as a language.
+- =load= & =require=, =require= imports "features" and is the sensical day-to-day option. =require_relative= to traverse directories
+
+*** Ch2
