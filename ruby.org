@@ -1,9 +1,10 @@
 #+auto_tangle: t
 #+OPTIONS: ^:nil
+#+LATEX_HEADER: \usepackage[margin=0.5in]{geometry}
 #+TITLE: Weekend trip from zero to Ruby on Rails
+#+AUTHOR: Tatu Heikkilä
 
-
-
+\hfill\break These are my study notes on Ruby and Rails over 2.5 days.
 
 * Ruby
 Ruby on Rails can be learned on its own, but knowledge of Ruby should come in useful.
@@ -11,9 +12,13 @@ Ruby on Rails can be learned on its own, but knowledge of Ruby should come in us
 ** Language motivation
 From [[http://ruby-doc.com/docs/ProgrammingRuby/html/index.html]]
 
+#+begin_quote
 Take a true object-oriented language, such as Smalltalk. Drop the unfamiliar syntax and move to more conventional, file-based source code. Now add in a good measure of the flexibility and convenience of languages such as Python and Perl. You end up with Ruby.
+#+end_quote
 
+#+begin_quote
 Ruby follows the Principle of Least Surprise---things work the way you would expect them to, with very few special cases or exceptions.
+#+end_quote
 
 ** Hello world
 
@@ -24,11 +29,11 @@ Ruby follows the Principle of Least Surprise---things work the way you would exp
 ** Books to read
 - The Well-Grounded Rubyist (2019)
 - Practical Object-Oriented Design: An Agile Primer Using Ruby (2019)
-- Only for reference: Programming Ruby 1.9 & 2.0: Pragmatic Guide (2013)
+- Only for reference, if at all: Programming Ruby 1.9 & 2.0: Pragmatic Guide (2013)
 
 ** The Well-Grounded Rubyist
 
-*** Ch1
+*** Foundations
 #+begin_src ruby :tangle "twgr_ch1.rb"
   x = "Hello"
   print x
@@ -37,7 +42,7 @@ Ruby follows the Principle of Least Surprise---things work the way you would exp
   x = "ello"
   p y  # Hello
 #+end_src
-value semantics, =p= to inspect, commenting
++value semantics+ reference semantics (=x.replace= is the right tool for assigning new (string) values per ch2, not '='), =p= to inspect, commenting
 
 
 - Scoping seems to be local-instance-class-global
@@ -64,4 +69,285 @@ is a /bareword/-style invocation. The message is =puts= with ="Hello"= argument 
   - one of the most central defining principles of the design of Ruby as a language.
 - =load= & =require=, =require= imports "features" and is the sensical day-to-day option. =require_relative= to traverse directories
 
-*** Ch2
+*** Objects, methods, & local variables
+#+begin_quote
+Rather than ask in the abstract whether a equals b, you ask a whether it considers itself equal to b.
+#+end_quote
+
+#+begin_src ruby :tangle "twgr_ch2_object.rb"
+  obj = Object.new
+  def obj.talk(objekti)
+    puts "Olem objekti"
+    puts "Olekko sää " + objekti + "?"
+    "Kyllä varmaan" # return is technically not needed?
+  end
+  puts "#{obj.talk("Tatu")} näin on"
+#+end_src
+
+- (.) is an operator
+- function parameter parentheses are usually omitted if there are none
+- =Object= has a fair bit of messages (=p Object.new.methods.sort=). =BasicObject= has essentially none.
+- All objects have an unique ID (=object_id=)
+- using =respond_to?= to avoid 'undefined method' crashes. E.g. when parsing messages from raw input. =__send__= or =public_send= allows deriving messages from variable contents
+- =elsif=
+- sponge (array) function parameters, parameter priority order
+- reference semantics, '=' always makes a new object
+- =dup=, =freeze=, =clone=. Freezing cannot be undone. =dup= unfreezes, =clone= remains frozen. A frozen array still allows changing unfrozen objects inside the array.
+- bareword identifiers are interpreted either as local variables, keywords, or method calls
+
+*** Organizing objects as classes
+- classes are named as constants (begins with a capital letter -> Ruby assumes it's a constant). Changing a constant will issue a warning
+- instance methods are methods shared by all class instances (singleton method =def ticket.event=, vs. =Class Ticket def event ..=)
+- methods can be overridden (e.g. in cases of inheritance)
+- class definitions can be reopened and methods added in: 3rd party libraries can add in new methods to standard library objects
+- instance variables save per-object state (<> class variables save per-class)
+
+  setter= methods have syntactic sugar:
+  #+begin_src ruby :tangle "twgr_ch3_setter.rb"
+    class Ticket
+      def price=(x)
+        @decimal_price = x
+      end
+    end
+    s = Ticket.new
+    s.price = 9.99
+    p s
+  #+end_src
+- use =attr_reader=, =attr_writer=, =attr_accessor= to avoid getter/setter boilerplate
+- =class Subclass < Superclass=
+- inheritance can be useful way to just rename classes for code clarity
+- no multiple inheritance: /modules/ make single heritance work
+- classes automatically inherit =Object=
+- anonymous classes
+- classes are objects, instances of class called =Class=
+- =&:= iterates over e.g. an array, often used with =map=
+- =Class= can have methods bound to it (=Ticket.method=, but not =Ticket.new.method=). Can be handy for code clarity: =Temperature::convert=
+- =Math::PI=
+- =is_a?=
+- Object gains methods whenever its base or superclass gains them, even after instantiation
+
+*** Modules and program organization
+- modules seem to be motivated similarly to Haskell's type classes (=stacklikeness= module example). But the modules aren't interfaces, they're implementations
+- '||=' (or-equals) assigns only if variable is nil
+- =include= (depending on order, class' instance methods are override or not module's), =prepend= (module overrides instance methods), =extend= (module methods are included as /class/ methods)
+- =super= to jump to superclass method with same name. Often used to escalate =method_missing=
+- 0-indexing
+- modules don't have instances seems to be the key difference to classes. Maybe modules are adjectives, classes are actors
+
+*** =self=, scope, and visibility
+#+begin_quote
+This chapter is about orienting yourself in Ruby code: knowing how the identifiers you’re using are going to resolve, following the shifts in context, and making sense of the use and reuse of identifiers and terms.
+#+end_quote
+
+- determination of =self= seems straightforward
+- =self.x= inside a =Class C= will be =C.x=, i.e. a class method
+- scoping is pretty clear cut
+- in some scopes a top-level search is needed: =::String= to get Ruby's =String= and not e.g. =Violin::String=
+- @@class variables cover also subclasses easily leading to global-like state handling issues. For variables covering all instances per-class, use @instance variables on the class itself (=self.total_count= etc)
+- private-protected-public
+- private methods cannot have an explicit receiver
+- private setter syntactic sugar has special handling via =self=
+
+*** Control-flow techniques
+This seems a good point to stop to save time. These structures seem pretty obvious.
+- ~yield~ yields control to code block given as parameter (the code block is a universal and optional part of a method call, not an argument)
+  - every method call in ruby has:
+    - receiver object/variable
+    - dot operator for explicit receiver
+    - method name
+    - optional: argument list
+    - optional: code block
+
+* Ruby on Rails
+
+RVM or rbenv seems to be essentially required in Ruby ecosystem. Installed RVM, since rbenv initialization seemed weird to add to personal .rc vs just adding RVM to PATH.
+- traditional MVC setup: request -> router -> usually controller -> update model, refresh view
+
+** Official guide
+[[https://guides.rubyonrails.org]]
+
+- Rails has its own DSL for routes. Routes (DSL) -> ControllerActions (Ruby classes) -> View (templates usually in HTML + Ruby) + Model
+- all application classes and modules are universally available without =require= (autoloading, doesn't apply to =lib/=)
+- =rails= has generators for models, controllers, etc
+- database(-agnostic) schemas in Ruby (=ActiveRecord=)
+- =rails console= for REPL
+- ~<% %>~ = evaluate enclosed Ruby code, ~<%= %>~ = evaluate and output returned value
+- =rails routes=
+- CRUD operated entities are resources
+- form builder (/Action View Form Helpers/)
+- Ruby: tokens with leading colons are of Symbol class: symbol literals. Immutable & unique. Mostly used as method arguments (e.g ~attr_accessor :name~) and hash keys.
+  - tokens ending in colons are a code clarity vehicle for functions arguments, allowing arbitrary ordering of arguments
+
+** Small Rails project
+- basic crud with sqlite (I assume is the default)
+- maybe just let user enter some statistics numbers ("Today I walked this many steps") and use some .js chart toolkit to generate a chart on the statistic
+- 1 model: Datapoints with date and steps values array
+- 2 views: Site and Datapoints (Chart)
+- 1 controller: Datapoints
+
+*** Modifications on Rails skeleton
+Strongly inspired by the official Rails "Getting Started"
+
+#+begin_src ruby :tangle "steps/config/routes.rb"
+  Rails.application.routes.draw do
+    root "datapoints#index"
+
+    resources :datapoints
+  end
+#+end_src
+
+#+begin_src bash
+  bin/rails generate controller Datapoints index --skip-routes
+#+end_src
+
+#+begin_src ruby :tangle "steps/app/controllers/datapoints_controller.rb"
+  class DatapointsController < ApplicationController
+    def index
+      @datapoints = Datapoint.order(:day)
+      @datapoint = Datapoint.new
+      @chart_x = chart_x_axis @datapoints
+      @chart_y = chart_y_axis @datapoints
+    end
+
+    def show
+      @datapoint = Datapoint.find(params[:id])
+    end
+
+    def new
+      @datapoint = Datapoint.new
+    end
+
+    def create
+      @datapoint = Datapoint.new(datapoint_params)
+
+      if @datapoint.save
+        redirect_to datapoints_url
+      else
+        render :index, status: :unprocessable_entity
+      end
+    end
+
+    def destroy
+      @datapoint = Datapoint.find(params[:id])
+      @datapoint.destroy
+
+      redirect_to datapoints_url, status: :see_other
+    end
+
+    def update
+      @datapoint = Datapoint.find(params[:id])
+
+      if @datapoint.update(datapoint_params)
+        redirect_to datapoints_url
+      else
+        render :edit, status: :unprocessable_entity
+      end
+    end
+
+    private
+    def datapoint_params
+      params.require(:datapoint).permit(:day, :steps)
+    end
+
+    def chart_x_axis(dps) # let's just include this general function here to save effort
+      d = Array.new
+      dps.each do |dp|
+        d.push(dp[:day])
+      end
+      d
+    end
+
+    def chart_y_axis(dps)
+      s = Array.new
+      dps.each do |dp|
+        s.push(dp[:steps])
+      end
+      s
+    end
+
+  end
+#+end_src
+
+#+begin_src html :tangle "steps/app/views/datapoints/index.html.erb"
+  <h1>Steps starting from day 0</h1>
+  <p>Click to edit values.</p>
+  <ul>
+    <% @datapoints.each do |datapoint| %>
+      <li>
+          <%= link_to (datapoint.day.to_s + ": " + datapoint.steps.to_s + " steps."), datapoint %>
+      </li>
+    <% end %>
+      <li>
+        <%= render "form", datapoint: @datapoint %>
+      </li>
+  </ul>
+  <div>
+    <canvas id="chart"></canvas>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+  const ctx = document.getElementById('chart');
+
+  let chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'Steps taken',
+        data: <%= @chart_y %>
+      }],
+      labels: <%= @chart_x %>
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+  </script>
+#+end_src
+
+#+begin_src html :tangle "steps/app/views/datapoints/show.html.erb"
+  <%= render "form", datapoint: @datapoint %>
+  <hr>
+  <%= form_with model: @datapoint, method: :delete do |f| %>
+    <div>
+      <%= f.submit "Delete datapoint" %>
+    </div>
+  <% end %>
+#+end_src
+
+#+begin_src html :tangle "steps/app/views/datapoints/_form.html.erb"
+  <%= form_with model: @datapoint do |f| %>
+    <div>
+      <%= f.label :day %>
+      <%= f.text_field :day %>
+      <% @datapoint.errors.full_messages_for(:day).each do |m| %>
+        <div><%= m %></div>
+      <% end %>
+    </div>
+    <div>
+      <%= f.label :steps %>
+      <%= f.text_area :steps %>
+      <% @datapoint.errors.full_messages_for(:steps).each do |m| %>
+        <div><%= m %></div>
+      <% end %>
+    </div>
+    <div>
+      <%= f.submit %>
+    </div>
+  <% end %>
+#+end_src
+
+#+begin_src bash
+  bin/rails generate model Datapoint steps:integer day:integer
+  bin/rails db:migrate
+#+end_src
+
+#+begin_src ruby :tangle "steps/app/models/datapoint.rb"
+  class Datapoint < ApplicationRecord
+    validates :day, presence: true
+    validates :steps, presence: true
+  end
+#+end_src
